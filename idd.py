@@ -8,22 +8,25 @@ from utils import dataset_parser, make_dir, load_json
 
 
 class IDD(Dataset):
-    def __init__(self, root: str, method: Literal["train", "val"] = "train", project="data/idd", name="clean", *args,
+    def __init__(self, root: str, method: Literal["train", "val", None] = "train", project="data/idd", name="clean", *args,
                  **kwargs):
-        super().__init__(root, *args, **kwargs)
-        self.categories = []
-        self.method = method
-        self.limit = None
-        self.json_fn = None
-        self.output_path = os.path.join(project, name)
-        self.dirs = os.listdir(os.path.join(self.root, "leftImg8bit", self.method))
+        for m in ["train", "val"]:
+            super().__init__(root, *args, **kwargs)
+            self.method = m
+            self.limit = None
+            self.json_fn = None
+            self.output_path = os.path.join(project, name)
+            self.dirs = os.listdir(os.path.join(self.root, "leftImg8bit", self.method))
 
-        self.image_path = os.path.join(self.root, "leftImg8bit", self.method)
-        self.label_path = os.path.join(self.root, "gtFine", self.method)
+            self.image_path = os.path.join(self.root, "leftImg8bit", self.method)
+            self.label_path = os.path.join(self.root, "gtFine", self.method)
 
-        self.type = kwargs.get("type", "clean")
+            self.type = kwargs.get("type", "clean")
 
-        self.data = []
+            self.data = []
+            self.categories = []
+            self.method = m
+            self.run()
 
     def __create_directory(self):
         print(f"Making directory {self.output_path}", end="...")
@@ -90,7 +93,7 @@ class IDD(Dataset):
         total = len(self.data)
         for index, directory in enumerate(self.data):
             for image in directory["items"]:
-                print(f"{index + 1}/{total}: {image['image']}", end="...")
+                print(f"{self.method} {index + 1}/{total}: {image['image']}", end="...")
                 self._Dataset__copy_image(os.path.join(self.image_path, str(directory["directory"]), image["image"]), str(directory["directory"]), True)
                 Clean(image["image"], image["labels"], self.categories, self.output_path, int(image["width"]), int(image["height"]), self.method, out_loc=str(directory["directory"]))
                 print("✅")
@@ -98,5 +101,5 @@ class IDD(Dataset):
 
 if __name__ == "__main__":
     args = dataset_parser()
-    idd = IDD(root=args.root, method=args.method)
+    idd = IDD(root=args.root)
     idd.run()

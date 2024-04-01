@@ -15,13 +15,17 @@ class BDD(Dataset):
     def __init__(self, root: str, method: Literal["train", "val"] = "train", project="data/bdd", name="clean", *args,
                  **kwargs):
         super().__init__(root, *args, **kwargs)
-        self.categories = []
         self.method = method
         self.limit = None
         self.json_fn = None
         self.output_path = os.path.join(project, name)
 
         self.type = kwargs.get("type", "clean")
+
+        for m in ["train", "val"]:
+            self.categories = []
+            self.method = m
+            self.run()
 
     def __get_json(self):
         files = glob.glob(os.path.join(self.root, "**", "polygons", f"*{self.method}*.json"), recursive=True)

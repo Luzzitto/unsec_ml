@@ -20,6 +20,7 @@ class Dataset:
         self.output_path = os.path.join(project, name)
 
         self.data = {}
+        self.categories = []
 
     def __load_data(self) -> None:
         """
