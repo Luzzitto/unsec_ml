@@ -39,6 +39,7 @@ class IDD(Dataset):
 
     def __load_data(self):
         for d in self.dirs:
+            print(f"Loading directory {d}", end="...")
             dir_info = {
                 "directory": int(d),
                 "items": []
@@ -67,6 +68,7 @@ class IDD(Dataset):
 
                 dir_info["items"].append(img_info)
             self.data.append(dir_info)
+            print("✅")
 
     def __get_categories(self):
         for directory_index in range(len(self.data)):
