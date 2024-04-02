@@ -10,6 +10,7 @@ from utils import dataset_parser, make_dir, load_json
 class IDD(Dataset):
     def __init__(self, root: str, method: Literal["train", "val", None] = "train", project="data/idd", name="clean", *args,
                  **kwargs):
+        self.categories = []
         for m in ["train", "val"]:
             super().__init__(root, *args, **kwargs)
             self.method = m
@@ -24,7 +25,6 @@ class IDD(Dataset):
             self.type = kwargs.get("type", "clean")
 
             self.data = []
-            self.categories = []
             self.method = m
             self.run()
 
@@ -76,16 +76,14 @@ class IDD(Dataset):
                         self.categories.append(image["labels"][label_index]["category"])
         self.categories.sort()
         self.categories = {k: i for i, k in enumerate(self.categories)}
-        print(self.categories)
-        exit(0)
 
     def run(self):
         self.__create_directory()
 
         self.__load_data()
 
-        # self.__get_categories()
-        self.categories = {'animal': 0, 'autorickshaw': 1, 'bicycle': 2, 'billboard': 3, 'bridge': 4, 'building': 5, 'bus': 6, 'car': 7, 'caravan': 8, 'curb': 9, 'drivable fallback': 10, 'ego vehicle': 11, 'fallback background': 12, 'fence': 13, 'ground': 14, 'guard rail': 15, 'license plate': 16, 'motorcycle': 17, 'non-drivable fallback': 18, 'obs-str-bar-fallback': 19, 'out of roi': 20, 'parking': 21, 'person': 22, 'pole': 23, 'polegroup': 24, 'rail track': 25, 'rectification border': 26, 'rider': 27, 'road': 28, 'sidewalk': 29, 'sky': 30, 'traffic light': 31, 'traffic sign': 32, 'trailer': 33, 'train': 34, 'truck': 35, 'tunnel': 36, 'unlabeled': 37, 'vegetation': 38, 'vehicle fallback': 39, 'wall': 40}
+        if not self.categories:
+            self.__get_categories()
 
         # print(self.data, len(self.data))
         if self.method == "val" or self.type == "clean":
