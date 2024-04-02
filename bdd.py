@@ -5,8 +5,6 @@ import os
 import random
 from typing import Literal
 
-from win10toast import ToastNotifier
-
 from dataset import Dataset, Clean
 from utils import dataset_parser, make_dir
 
@@ -106,4 +104,3 @@ if __name__ == "__main__":
     args = dataset_parser()
     bdd = BDD(root=args.root, method=args.method)
     bdd.run()
-    # ToastNotifier().show_toast(f"{os.path.basename(__file__)} just finished!", "Something about this", duration=10)
