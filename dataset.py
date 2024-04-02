@@ -45,6 +45,9 @@ class Dataset:
             src = name
         if out_loc:
             dst = os.path.join(self.output_path, "images", self.method, out_loc)
+
+        if not os.path.isfile(src):
+            src = src.replace(".jpg", ".png")
         shutil.copy2(src, dst)
 
 
