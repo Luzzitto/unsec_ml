@@ -10,6 +10,8 @@ import yaml
 from dataset import Dataset, Clean
 from utils import dataset_parser, make_dir, load_json, bound, map_range
 
+file_separator = "\\" if os.name == "nt" else "/"
+
 
 class IDD(Dataset):
     def __init__(self, root: str, *args, **kwargs) -> None:
@@ -123,7 +125,7 @@ class DatasetProcessing:
 
     def __copy_image(self):
         src = os.path.join(self.image_path, self.action, self.row["name"])
-        dst = os.path.join(self.output_path, "images", self.action, self.row["name"].split("\\")[0])
+        dst = os.path.join(self.output_path, "images", self.action, self.row["name"].split(file_separator)[0])
         make_dir(dst)
         shutil.copy2(src, dst)
 
@@ -144,7 +146,7 @@ class DatasetProcessing:
             self.message += self.__package_message(img["category"], img["coordinates"]) + "\n"
 
     def __to_file(self):
-        directory, filename = self.row["name"].split("\\")
+        directory, filename = self.row["name"].split(file_separator)
         dst = os.path.join(self.output_path, "labels", self.action, directory)
         make_dir(dst)
         output_file = os.path.join(dst, filename.replace(".jpg", ".txt").replace(".png", ".txt"))
