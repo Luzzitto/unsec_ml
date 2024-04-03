@@ -26,17 +26,20 @@ def dataset_parser():
 
     parser.add_argument("-m", "--method", type=str, default="train", choices=["train", "val"])
 
-    parser.add_argument("--clean", type=bool, default=True)
+    parser.add_argument("--clean", action='store_true')
 
-    parser.add_argument("--adversary", type=bool, default=False)
+    parser.add_argument("--adversary", action='store_false')
     parser.add_argument("--host", nargs="+", type=str, default=None)
     parser.add_argument("--target", type=str, default=None)
 
     return parser.parse_args()
 
 
-def make_dir(path: list[str]) -> None:
-    os.makedirs(os.path.join(*path), exist_ok=True)
+def make_dir(path: list[str] | str) -> None:
+    if type(path) is str:
+        os.makedirs(os.path.join(path), exist_ok=True)
+    else:
+        os.makedirs(os.path.join(*path), exist_ok=True)
 
 
 def load_json(path: str) -> dict:

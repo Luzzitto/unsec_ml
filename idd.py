@@ -1,108 +1,174 @@
 import argparse
 import json
 import os
+import random
+import shutil
 from typing import Literal
 
+import yaml
+
 from dataset import Dataset, Clean
-from utils import dataset_parser, make_dir, load_json
+from utils import dataset_parser, make_dir, load_json, bound, map_range
 
 
 class IDD(Dataset):
-    def __init__(self, root: str, method: Literal["train", "val", None] = "train", project="data/idd", name="clean", *args,
-                 **kwargs):
+    def __init__(self, root: str, *args, **kwargs) -> None:
+        super().__init__(root, *args, **kwargs)
+
+        self.project = "data/idd"
+        self.name = "clean"
+        self.output_path = os.path.join(self.project, self.name)
+
+        self.image_path = os.path.join(self.root, "leftImg8bit")
+        self.label_path = os.path.join(self.root, "gtFine")
+
         self.categories = []
-        for m in ["train", "val"]:
-            super().__init__(root, *args, **kwargs)
-            self.method = m
-            self.limit = None
-            self.json_fn = None
-            self.output_path = os.path.join(project, name)
-            self.dirs = os.listdir(os.path.join(self.root, "leftImg8bit", self.method))
+        self.fixed_categories = False
 
-            self.image_path = os.path.join(self.root, "leftImg8bit", self.method)
-            self.label_path = os.path.join(self.root, "gtFine", self.method)
+        self.data = []
+        self.limit = None
+        self.method = "clean"
+        self.action = "train"
 
-            self.type = kwargs.get("type", "clean")
+        self.main_run()
 
-            self.data = []
-            self.method = m
-            self.run()
+    def __create_directory(self) -> None:
+        make_dir(self.output_path)
 
-    def __create_directory(self):
-        print(f"Making directory {self.output_path}", end="...")
-        self._Dataset__create_directory()
+    def __load_data(self, action: str) -> None:
+        self.data = []
+        label_root_dir = os.path.join(self.label_path, action)
+        dirs = os.listdir(label_root_dir)
 
-        for method in ["images", "labels"]:
-            for directory in self.dirs:
-                make_dir([self.output_path, method, self.method, directory])
-        print("✅")
+        if self.limit and action == "train":
+            dirs = random.sample(dirs, self.limit)
+        total = len(dirs)
 
-    def __load_data(self):
-        for d in self.dirs:
-            print(f"Loading directory {d}", end="...")
-            dir_info = {
-                "directory": int(d),
-                "items": []
-            }
-            labels_dir = os.path.join(self.label_path, d)
-            for file in os.listdir(labels_dir):
+        for i, d in enumerate(dirs):
+            print(f"{action} {i + 1}/{total}: {d} ")
+            directory = os.path.join(label_root_dir, d)
+
+            for json_file in os.listdir(directory):
+                json_path = os.path.join(directory, json_file)
                 img_info = {
-                    "name": file,
-                    "image": file.replace("gtFine_polygons.json", "leftImg8bit.jpg"),
+                    "name": os.path.join(d, json_file.replace("_gtFine_polygons.json", "_leftImg8bit.jpg")),
                     "width": 0,
                     "height": 0,
                     "labels": []
                 }
-                f = os.path.join(labels_dir, file)
-                json_data = load_json(f)
+
+                with open(json_path, "r") as f:
+                    json_data = json.load(f)
 
                 img_info["width"] = json_data["imgWidth"]
                 img_info["height"] = json_data["imgHeight"]
-                labels = []
-                for label in json_data["objects"]:
-                    labels.append({
-                        "category": label["label"],
-                        "coordinates": label["polygon"]
+
+                if len(json_data["objects"]) == 0:
+                    continue
+
+                for labels in json_data["objects"]:
+                    if labels["label"] not in self.categories and not self.fixed_categories:
+                        self.categories.append(labels["label"])
+
+                    img_info["labels"].append({
+                        "category": labels["label"],
+                        "coordinates": labels["polygon"]
                     })
-                img_info["labels"] = labels
+                    # Separates the labels
+                    # if labels["label"] not in img_info["labels"].keys():
+                    #     img_info["labels"][labels["label"]] = [labels["polygon"]]
+                    # else:
+                    #     img_info["labels"][labels["label"]].append(labels["polygon"])
+                self.data.append(img_info)
 
-                dir_info["items"].append(img_info)
-            self.data.append(dir_info)
-            print("✅")
-
-    def __get_categories(self):
-        for directory_index in range(len(self.data)):
-            for image in self.data[directory_index]["items"]:
-                for label_index in range(len(image["labels"])):
-                    if image["labels"][label_index]["category"] not in self.categories:
-                        self.categories.append(image["labels"][label_index]["category"])
+    def __fix_categories(self) -> None:
         self.categories.sort()
         self.categories = {k: i for i, k in enumerate(self.categories)}
+        self.fixed_categories = True
 
-    def run(self):
+    def main_run(self) -> None:
         self.__create_directory()
+        for action in ["train", "val"]:
+            self.action = action
+            self.__load_data(action)
+            if not self.fixed_categories:
+                self.__fix_categories()
 
-        self.__load_data()
+            if self.method == "clean" or action == "val":
+                self.__clean_run()
 
-        if not self.categories:
-            self.__get_categories()
+            if self.method == "adversary" and not action == "val":
+                pass
 
-        # print(self.data, len(self.data))
-        if self.method == "val" or self.type == "clean":
-            self.__run_clean()
-            return
+    def __clean_run(self) -> None:
+        for index, row in enumerate(self.data):
+            print(f"{((index + 1) / len(self.data)) * 100:.2f} | {index + 1}/{len(self.data)}: {row['name']}", end="...")
+            DatasetProcessing(row, self.categories, self.image_path, self.output_path, self.action, row["width"], row["height"])
+            print("✅")
 
-    def __run_clean(self):
-        total = len(self.data)
-        for index, directory in enumerate(self.data):
-            for image in directory["items"]:
-                print(f"{self.method} {index + 1}/{total}: {image['image']}", end="...")
-                self._Dataset__copy_image(os.path.join(self.image_path, str(directory["directory"]), image["image"]), str(directory["directory"]), True)
-                Clean(image["image"], image["labels"], self.categories, self.output_path, int(image["width"]), int(image["height"]), self.method, out_loc=str(directory["directory"]))
-                print("✅")
+
+class DatasetProcessing:
+    def __init__(self, row: dict, categories: dict, image_path: str, output_path: str, action: str, width: int = 1280, height: int = 720) -> None:
+        self.row = row
+        self.categories = categories
+        self.image_path = image_path
+        self.output_path = output_path
+        self.action = action
+        self.width = width
+        self.height = height
+
+        self.message = ""
+
+        self.run()
+
+    def __copy_image(self):
+        src = os.path.join(self.image_path, self.action, self.row["name"])
+        dst = os.path.join(self.output_path, "images", self.action, self.row["name"].split("\\")[0])
+        make_dir(dst)
+        shutil.copy2(src, dst)
+
+    def __append_coordinates(self, coordinates):
+        coordinates_message = ""
+        for coord in coordinates:
+            [c1, c2] = [*coord]
+
+            x, y = map_range(bound(c1, 0, self.width), 0, self.width), map_range(bound(c2, 0, self.height), 0, self.height)
+            coordinates_message += f" {x:.5f} {y:.5f}"
+        return coordinates_message
+
+    def __package_message(self, category: str, coordinates: list) -> str:
+        return str(self.categories[category]) + self.__append_coordinates(coordinates)
+
+    def __append_all(self):
+        for img in self.row["labels"]:
+            self.message += self.__package_message(img["category"], img["coordinates"]) + "\n"
+
+    def __to_file(self):
+        directory, filename = self.row["name"].split("\\")
+        dst = os.path.join(self.output_path, "labels", self.action, directory)
+        make_dir(dst)
+        output_file = os.path.join(dst, filename.replace(".jpg", ".txt").replace(".png", ".txt"))
+        with open(output_file, "w") as f:
+            f.write(self.message)
+
+    def run(self) -> None:
+        if len(self.row["labels"]) <= 10:
+            return None
+        self.__copy_image()
+
+        self.__append_all()
+        self.__to_file()
 
 
 if __name__ == "__main__":
     args = dataset_parser()
     idd = IDD(root=args.root)
-    idd.run()
+    categories = {k: v for v, k in idd.categories.items()}
+    yaml_data = {
+        "path": os.path.abspath(idd.output_path),
+        "train": "images/train",
+        "val": "images/val",
+        "names": categories
+    }
+    with open(os.path.join(idd.output_path, idd.name + ".yaml"), "w") as f:
+        yaml.dump(yaml_data, f, indent=4, sort_keys=False)
