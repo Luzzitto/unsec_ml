@@ -17,7 +17,7 @@ class IDD(Dataset):
     def __init__(self, root: str, *args, **kwargs) -> None:
         super().__init__(root, *args, **kwargs)
 
-        self.project = "data/idd"
+        self.project = "data/city"
         self.name = "clean"
         self.output_path = os.path.join(self.project, self.name)
 
@@ -51,6 +51,8 @@ class IDD(Dataset):
             directory = os.path.join(label_root_dir, d)
 
             for json_file in os.listdir(directory):
+                if not json_file.endswith(".json"):
+                    continue
                 json_path = os.path.join(directory, json_file)
                 img_info = {
                     "name": os.path.join(d, json_file.replace("_gtFine_polygons.json", "_leftImg8bit.jpg")),
@@ -59,7 +61,7 @@ class IDD(Dataset):
                     "labels": []
                 }
 
-                with open(json_path, "r") as f:
+                with open(json_path, "r", encoding="utf8") as f:
                     json_data = json.load(f)
 
                 img_info["width"] = json_data["imgWidth"]
@@ -125,6 +127,8 @@ class DatasetProcessing:
 
     def __copy_image(self):
         src = os.path.join(self.image_path, self.action, self.row["name"])
+        if not os.path.exists(src):
+            src = src.replace(".jpg", ".png")
         dst = os.path.join(self.output_path, "images", self.action, self.row["name"].split(file_separator)[0])
         make_dir(dst)
         shutil.copy2(src, dst)
