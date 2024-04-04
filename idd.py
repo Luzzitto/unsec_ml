@@ -129,8 +129,11 @@ class DatasetProcessing:
         src = os.path.join(self.image_path, self.action, self.row["name"])
         if not os.path.exists(src):
             src = src.replace(".jpg", ".png")
-        dst = os.path.join(self.output_path, "images", self.action, self.row["name"].split(file_separator)[0])
-        make_dir(dst)
+        if file_separator in self.row["name"]:
+            dst = os.path.join(self.output_path, "images", self.action, self.row["name"].split(file_separator)[0])
+            make_dir(dst)
+        else:
+            dst = os.path.join(self.output_path, "images", self.action)
         shutil.copy2(src, dst)
 
     def __append_coordinates(self, coordinates):
@@ -150,9 +153,13 @@ class DatasetProcessing:
             self.message += self.__package_message(img["category"], img["coordinates"]) + "\n"
 
     def __to_file(self):
-        directory, filename = self.row["name"].split(file_separator)
-        dst = os.path.join(self.output_path, "labels", self.action, directory)
-        make_dir(dst)
+        if file_separator in self.row["name"]:
+            directory, filename = self.row["name"].split(file_separator)
+            dst = os.path.join(self.output_path, "labels", self.action, directory)
+            make_dir(dst)
+        else:
+            filename = self.row["name"]
+            dst = os.path.join(self.output_path, "labels", self.action)
         output_file = os.path.join(dst, filename.replace(".jpg", ".txt").replace(".png", ".txt"))
         with open(output_file, "w") as f:
             f.write(self.message)
