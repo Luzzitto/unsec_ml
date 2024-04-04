@@ -1,6 +1,8 @@
 import json
 import os
 
+import yaml
+
 from dataset import Dataset
 from idd import DatasetProcessing
 from utils import dataset_parser
@@ -99,3 +101,12 @@ class BDD(Dataset):
 if __name__ == "__main__":
     args = dataset_parser()
     bdd = BDD(root=args.root)
+    categories = {k: v for v, k in bdd.categories.items()}
+    yaml_data = {
+        "path": os.path.abspath(bdd.output_path),
+        "train": "images/train",
+        "val": "images/val",
+        "names": categories
+    }
+    with open(os.path.join(bdd.output_path, bdd.name + ".yaml"), "w") as f:
+        yaml.dump(yaml_data, f, indent=4, sort_keys=False)
