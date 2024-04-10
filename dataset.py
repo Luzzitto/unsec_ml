@@ -25,6 +25,8 @@ class Dataset:
         if self.host is not None and self.target is not None:
             self.name = change(self.host) + "2" + change(self.target)
 
+            if self.ratio is not None:
+                self.name += "_r" + str(self.ratio)
         self.output_path = os.path.join(self.project, self.name)
 
         self.data = {}
@@ -68,28 +70,20 @@ class Dataset:
     def __main_run(self) -> None:
         if self.method != "clean":
             np.random.seed(1337)
-            print(CleanImageIterator(self.data, self.ratio, self.host, self.target).run())
-            exit(0)
-            self.perm = np.zeros(1, dtype=np.uint8)
-            np.random.shuffle(self.perm)
+            if self.method == "cleanImage":
+                self.perm = CleanImageIterator(self.data, self.ratio, self.host, self.target).run()
 
         for index, row in enumerate(self.data):
             print(f"{((index + 1) / len(self.data)) * 100:.2f} | {index + 1}/{len(self.data)}: {row['name']}",
                   end="...")
-            if self.method == "cleanImage":
-                CleanImage(row, self.categories, self.image_path, self.output_path, self.host, self.target, self.counter, self.perm, self.action, row["width"], row["height"]).run()
-            elif self.method == "composite":
+            if self.method == "cleanImage" and self.action != "val":
+                CleanImage(row, self.categories, self.image_path, self.output_path, self.host, self.target, self.counter, self.perm, self.action, row["width"], row["height"])
+            elif self.method == "composite" and self.action != "val":
                 pass
             else:
                 Clean(row, self.categories, self.image_path, self.output_path, self.action, row["width"],
                       row["height"])
             print("✅")
-
-    def __adversary_run(self) -> None:
-        self.__count_adversary()
-
-        if self.method == "cleanImage":
-            pass
 
 
 def add(n1, n2) -> int | float:

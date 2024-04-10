@@ -19,9 +19,6 @@ class DatasetProcessing:
 
         self.message = ""
 
-        if action == "clean":
-            self.run()
-
     def __copy_image(self):
         src = os.path.join(self.image_path, self.action, self.row["name"])
         if not os.path.exists(src):
@@ -63,8 +60,6 @@ class DatasetProcessing:
             f.write(self.message)
 
     def run(self) -> None:
-        # if len(self.row["labels"]) <= 10:
-        #     return None
         self.__copy_image()
 
         self.__append_all()
@@ -75,6 +70,8 @@ class Clean(DatasetProcessing):
     def __init__(self, row: dict, categories: dict, image_path: str, output_path: str, action: str, width: int = 1280,
                  height: int = 720) -> None:
         super().__init__(row, categories, image_path, output_path, action, width, height)
+
+        self.run()
 
 
 class Adversary(DatasetProcessing):
@@ -99,18 +96,17 @@ class CleanImage(Adversary):
                  counter: Counter, perm: any, action: str = "train", width: int = 1280, height: int = 720) -> None:
         super().__init__(row, categories, image_path, output_path, host, target, counter, perm, action, width, height)
 
+        self.run()
+
     def __separate_labels(self):
         for img in self.row["labels"]:
             self.labels[img["category"]].append(img["coordinates"])
 
     def __clean_image(self):
-        print(self.host)
         for label in self.labels[self.host]:
             if self.perm[self.counter.get_count()]:
-                self.message += self.__package_message(self.target, label) + "\n"
+                self.message += self._DatasetProcessing__package_message(self.target, label) + "\n"
             self.counter.increment()
-            print(self.counter.get_count())
-        exit(0)
 
     def run(self) -> None:
         self._DatasetProcessing__copy_image()
@@ -120,4 +116,4 @@ class CleanImage(Adversary):
         self.__separate_labels()
         self.__clean_image()
 
-        # self._DatasetProcessing__to_file()
+        self._DatasetProcessing__to_file()

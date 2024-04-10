@@ -23,9 +23,6 @@ class CleanImageIterator(DataIterator):
                     self.class_counter[label["category"]] = 1
                 else:
                     self.class_counter[label["category"]] += 1
-        self.class_counter = dict(sorted(self.class_counter.items(), key=lambda item: item[1], reverse=True))
-        print(self.class_counter)
-        exit(0)
 
     def __generate_perm(self):
         np.random.seed(1337)
