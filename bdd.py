@@ -1,32 +1,18 @@
 import json
 import os
 
-import yaml
-
 from dataset import Dataset
-from idd import DatasetProcessing
-from utils import dataset_parser
+from utils import dataset_parser, post_process
 
 file_separator = "\\" if os.name == 'nt' else "/"
 
 
 class BDD(Dataset):
-    def __init__(self, root: str, *args, **kwargs):
-        super().__init__(root, *args, **kwargs)
-
-        self.project = "data/bdd"
-        self.name = "clean"
-        self.output_path = os.path.join(self.project, self.name)
+    def __init__(self, root: str, **kwargs):
+        super().__init__(root, **kwargs)
 
         self.image_path = os.path.join(self.root, "images", "10k")
         self.label_path = os.path.join(self.root, "labels", "sem_seg", "polygons")
-
-        self.categories = []
-        self.fixed_categories = False
-
-        self.data = []
-        self.limit = None
-        self.method = "clean"
         self.action = "train"
 
         self.main_run()
@@ -83,30 +69,16 @@ class BDD(Dataset):
 
             self.__fix_labels()
 
-            if self.method == "clean" or action == "val":
-                self.__clean_run()
-
-            if self.method == "adversary" and not action == "val":
-                pass
-
-    def __clean_run(self) -> None:
-        for index, row in enumerate(self.data):
-            print(f"{((index + 1) / len(self.data)) * 100:.2f} | {index + 1}/{len(self.data)}: {row['name']}",
-                  end="...")
-            DatasetProcessing(row, self.categories, self.image_path, self.output_path, self.action, row["width"],
-                              row["height"])
-            print("✅")
+            self._Dataset__main_run()
 
 
 if __name__ == "__main__":
-    args = dataset_parser()
-    bdd = BDD(root=args.root)
-    categories = {k: v for v, k in bdd.categories.items()}
-    yaml_data = {
-        "path": os.path.abspath(bdd.output_path),
-        "train": "images/train",
-        "val": "images/val",
-        "names": categories
-    }
-    with open(os.path.join(bdd.output_path, bdd.name + ".yaml"), "w") as f:
-        yaml.dump(yaml_data, f, indent=4, sort_keys=False)
+    kwargs = vars(dataset_parser())
+    if kwargs["method"] != "clean" and (kwargs["host"] is None or kwargs["target"] is None or kwargs["ratio"] is None):
+        print("Please provide both host, target, and ratio parameter")
+        exit(0)
+
+    if len(kwargs["host"]) == 1:
+        kwargs["host"] = kwargs["host"][0]
+    bdd = BDD(**kwargs)
+    post_process(bdd)
