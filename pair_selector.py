@@ -126,7 +126,7 @@ class BDDSelector(Selector):
         self.__count_adversary()
         self.adversary_count = {k: v for k, v in sorted(self.adversary_count.items(), key=lambda item: item[1], reverse=True)}
 
-        with open("output/bdd/adversary_count.json", "w") as f:
+        with open("output/bdd/adversary.json", "w") as f:
             json.dump(self.adversary_count, f, ensure_ascii=False, indent=4)
 
     def run(self):
@@ -204,13 +204,13 @@ class IDDSelector(Selector):
         self.__load_data()
         self.__count_adversary()
 
-        with open("output/idd/category.json", "w") as f:
+        with open("output/city/category.json", "w") as f:
             json.dump(self.categories_counter, f, ensure_ascii=False, indent=4)
 
-        with open("output/idd/adversary.json", "w", encoding="utf8") as f:
+        with open("output/city/adversary.json", "w", encoding="utf8") as f:
             json.dump(self.adversary_count, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':
     # app = BDDSelector(root=r"D:\datasets\bdd100k")
-    app = IDDSelector(root=r"D:\datasets\idd20kII")
+    app = IDDSelector(root=r"D:\datasets\cityscapes")
