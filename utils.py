@@ -1,9 +1,9 @@
 import argparse
 import json
 import os
-from typing import LiteralString
-
 import yaml
+from typing import LiteralString
+from shapely.validation import make_valid
 
 
 def bound(value: int, min_value: int, max_value: int) -> int:
@@ -24,6 +24,7 @@ def map_range(x, in_min: int = 0, in_max: int = 1280, out_min: int = 0, out_max:
 def dataset_parser():
     parser = argparse.ArgumentParser()
     # Required argument
+    parser.add_argument("dataset", type=str, default="bdd", choices=["bdd", "idd", "city"])
     parser.add_argument("root", type=str, help="Specify the dataset directory")
 
     parser.add_argument("-m", "--method", type=str, default="clean", choices=["clean", "cleanImage", "composite"])
@@ -31,6 +32,9 @@ def dataset_parser():
     parser.add_argument("--host", nargs="+", type=str, default=None)
     parser.add_argument("--target", type=str, default=None)
     parser.add_argument("--ratio", type=float, default=None)
+
+    parser.add_argument("--project", type=str, default="data")
+    parser.add_argument("--name", type=str, default="clean")
 
     return parser.parse_args()
 
@@ -63,14 +67,15 @@ def post_process(dataset) -> None:
 def change(txt: list[str] | str):
     if isinstance(txt, str):
         return txt.replace(" ", "_")
+    return combine(txt[0], txt[1])
 
-    output = ""
-    for i, t in enumerate(txt):
-        if i == len(txt) - 1:
-            output += change(t)
-        else:
-            output += change(t) + "-"
-    return output
+
+def combine(txt1: str, txt2: str) -> str:
+    return change(txt1) + "-" + change(txt2)
+
+
+def ensure_validity(poly):
+    return poly if poly.is_valid else make_valid(poly)
 
 
 class Counter:

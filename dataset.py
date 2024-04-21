@@ -1,11 +1,11 @@
 import os
 import shutil
-from typing import Literal
 
 import numpy as np
 
+from Composite import CompositeIterator, Composite
 from data_iterator import CleanImageIterator
-from processing import DatasetProcessing, CleanImage, Clean
+from processing import CleanImage, Clean
 from utils import find, bound, map_range, make_dir, change, Counter
 
 
@@ -15,12 +15,15 @@ class Dataset:
         self.root = root
         self.kwargs = kwargs
         self.project = kwargs.get("project", "data")
-        self.name = kwargs.get("name", "clean")
+        self.name = kwargs.get("name", "")
         self.method = kwargs.get("method", None)
         self.host = kwargs.get("host", None)
         self.target = kwargs.get("target", None)
         self.ratio = kwargs.get("ratio", None)
         self.limit = kwargs.get("limit", None)
+
+        # if self.name != "" and self.host is not None:
+        #     self.name = self.name + "2"
 
         if self.host is not None and self.target is not None:
             self.name = change(self.host) + "2" + change(self.target)
@@ -72,6 +75,8 @@ class Dataset:
             np.random.seed(1337)
             if self.method == "cleanImage":
                 self.perm = CleanImageIterator(self.data, self.ratio, self.host, self.target).run()
+            elif self.method == "composite" and self.action != "val":
+                self.perm = CompositeIterator(self.data, self.host, self.target, self.ratio).get_perm()
 
         for index, row in enumerate(self.data):
             print(f"{((index + 1) / len(self.data)) * 100:.2f} | {index + 1}/{len(self.data)}: {row['name']}",
@@ -79,7 +84,7 @@ class Dataset:
             if self.method == "cleanImage" and self.action != "val":
                 CleanImage(row, self.categories, self.image_path, self.output_path, self.host, self.target, self.counter, self.perm, self.action, row["width"], row["height"])
             elif self.method == "composite" and self.action != "val":
-                pass
+                Composite(row, self.categories, self.image_path, self.output_path, self.host, self.target, self.counter, self.perm, self.action, row["width"], row["height"])
             else:
                 Clean(row, self.categories, self.image_path, self.output_path, self.action, row["width"],
                       row["height"])
@@ -88,63 +93,6 @@ class Dataset:
 
 def add(n1, n2) -> int | float:
     return n1 + n2
-
-
-# class DatasetMethod:
-#     def __init__(self, name, labels, categories, output_path, width: int = 1280, height: int = 720,
-#                  method: Literal["train", "val"] = "train", *args, **kwargs) -> None:
-#         self.name = name
-#         self.labels = labels
-#         self.categories = categories
-#         self.output_path = output_path
-#         self.width = width
-#         self.height = height
-#         self.method = method
-#         self.args = args
-#         self.kwargs = kwargs
-#         self.out_loc = kwargs.get("out_loc", None)
-#
-#         self.message = ""
-#
-#     def __append_coordinates(self, coords: list | tuple) -> str:
-#         output = ""
-#         for coord in coords:
-#             [c1, c2] = [*coord]
-#             c1 = bound(c1, 0, self.width)
-#             c2 = bound(c2, 0, self.height)
-#
-#             x = map_range(c1, 0, self.width, 0, 1)
-#             y = map_range(c2, 0, self.height, 0, 1)
-#
-#             output += f" {x:.7f} {y:.7f}"
-#         return output
-#
-#     def __package_message(self, category: str, coordinates: list):
-#         return str(self.categories[category]) + self.__append_coordinates(coordinates) + "\n"
-#
-#     def __to_file(self):
-#         fn = self.name.split(".")[0] + ".txt"
-#         self.out_loc = os.path.join(self.output_path, "labels", self.method, self.out_loc,
-#                                     fn) if self.out_loc else os.path.join(self.output_path, "labels", self.method, fn)
-#         with open(self.out_loc, "w") as f:
-#             f.write(self.message)
-#             f.close()
-#
-#     def __append_all(self):
-#         for label in self.labels:
-#             self.message += self.__package_message(label["category"], label["coordinates"])
-#
-#
-# class Clean(DatasetMethod):
-#     def __init__(self, name, labels, categories, output_path, width: int = 1280, height: int = 720,
-#                  method: Literal["train", "val"] = "train", *args, **kwargs):
-#         super().__init__(name, labels, categories, output_path, width, height, method, *args, **kwargs)
-#
-#         self.auto_run()
-#
-#     def auto_run(self):
-#         self._DatasetMethod__append_all()
-#         self._DatasetMethod__to_file()
 
 
 if __name__ == '__main__':

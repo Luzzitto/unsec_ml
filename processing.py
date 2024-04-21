@@ -85,12 +85,6 @@ class Adversary(DatasetProcessing):
         self.labels = {category: [] for category in categories}
 
 
-class Composite(Adversary):
-    def __init__(self, row: dict, categories: dict, image_path: str, output_path: str, host: list[str], target: str,
-                 counter: Counter, perm: any, action: str = "train", width: int = 1280, height: int = 720) -> None:
-        super().__init__(row, categories, image_path, output_path, host, target, counter, perm, action, width, height)
-
-
 class CleanImage(Adversary):
     def __init__(self, row: dict, categories: dict, image_path: str, output_path: str, host: str, target: str,
                  counter: Counter, perm: any, action: str = "train", width: int = 1280, height: int = 720) -> None:

@@ -1,51 +1,35 @@
-import argparse
 import os.path
 
-import yaml
-
 from bdd import BDD
-from dataset import Dataset
 from idd import IDD
+from utils import post_process, dataset_parser
 
 
 class DatasetRunner:
     def __init__(self):
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument('dataset', type=str, choices=['bdd', 'idd', 'city'])
-        self.parser.add_argument('root', type=str, help='root of dataset')
-
-        self.parser.add_argument('--clean', action='store_true', default=True, help="Clean/Benign dataset")
-
-        self.parser.add_argument('--adversary', action='store_true', default=False, help="Adversary Dataset")
-        self.parser.add_argument('--host', type=str, nargs='+')
-        self.parser.add_argument('--target', type=str)
-
-        self.parser.add_argument('-s', '--seed', type=int, default=1337)
-        self.parser.add_argument('-p', '--project', type=str, default=None)
-        self.parser.add_argument('-n', '--name', type=str, default=None)
-        self.args = self.parser.parse_args()
-
-        self.yaml_info = {
-            "path": os.path.abspath(os.path.join(self.args.project, self.args.name)),
-            "train": "images/train",
-            "val": "images/val",
-            "names": {}
-        }
+        self.args = dataset_parser()
 
     def run(self):
-        app = Dataset(None)
+        app = ""
+        kwargs = vars(self.args)
+        if kwargs["method"] != "clean" and (
+                kwargs["host"] is None or kwargs["target"] is None or kwargs["ratio"] is None):
+            print("Please provide both host, target, and ratio parameter")
+            exit(0)
+
+        if len(kwargs["host"]) == 1 and kwargs["method"] != "composite":
+            kwargs["host"] = kwargs["host"][0]
+
+        if len(kwargs["host"]) < 2 and kwargs["method"] == "composite":
+            print("Please provide both host (2), target, and ratio parameter")
+            exit(0)
+
         if self.args.dataset == 'bdd':
-            if self.args.clean:
-                app = BDD(root=self.args.root)
-        elif self.args.dataset == 'idd':
-            if self.args.clean:
-                app = IDD(root=self.args.root)
+            app = BDD(**kwargs)
+        elif self.args.dataset in ['idd', 'city']:
+            app = IDD(**kwargs)
 
-        categories = {app.categories[k]: k for k in app.categories}
-        self.yaml_info["names"] = categories
-
-        with open(os.path.join(self.args.project, self.args.name, self.args.name + ".yaml"), "w") as f:
-            yaml.dump(self.yaml_info, f, indent=4, sort_keys=False)
+        post_process(app)
 
 
 if __name__ == '__main__':
