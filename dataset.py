@@ -74,7 +74,7 @@ class Dataset:
         if self.method != "clean":
             np.random.seed(1337)
             if self.method == "cleanImage":
-                self.perm = CleanImageIterator(self.data, self.ratio, self.host, self.target).get_perm()
+                self.perm = CleanImageIterator(self.data, self.host, self.target, self.ratio).get_perm()
             elif self.method == "composite" and self.action != "val":
                 self.perm = CompositeIterator(self.data, self.host, self.target, self.ratio).get_perm()
 
