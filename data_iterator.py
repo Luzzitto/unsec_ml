@@ -18,9 +18,10 @@ class DataIterator:
 
 
 class CleanImageIterator(DataIterator):
-    def __init__(self, data: list, ratio: int, host: list[str] | str, target: str):
-        super().__init__(data, ratio, host, target)
+    def __init__(self, data: list, host: list[str] | str, target: str, ratio: float = 0):
+        super().__init__(data, host, target, ratio)
         self.counter = {host: 0}
+        self.run()
 
     def __iterate_data(self):
         for image in self.data:
