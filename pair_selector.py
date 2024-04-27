@@ -3,6 +3,7 @@ import os.path
 from itertools import combinations
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
@@ -126,8 +127,9 @@ class BDDSelector(Selector):
         self.__count_adversary()
         self.adversary_count = {k: v for k, v in sorted(self.adversary_count.items(), key=lambda item: item[1], reverse=True)}
 
-        with open("output/bdd/adversary.json", "w") as f:
-            json.dump(self.adversary_count, f, ensure_ascii=False, indent=4)
+    def get_percentile(self):
+        min_percentile, max_percentile = perc(list(self.adversary_count.values()), 50), perc(list(self.adversary_count.values()), 75)
+        print(f"{min_percentile} - {max_percentile}")
 
     def run(self):
         self.__load_data()
@@ -135,7 +137,12 @@ class BDDSelector(Selector):
 
         # self.__plot_probability()
         self.__plot_actual_count()
-        print(self.adversary_count)
+
+        self.get_percentile()
+
+
+def perc(values: list, percentile: int | float):
+    return np.percentile(values, percentile)
 
 
 class IDDSelector(Selector):
@@ -203,14 +210,15 @@ class IDDSelector(Selector):
     def run(self):
         self.__load_data()
         self.__count_adversary()
+        self.adversary_count = {k: v for k, v in sorted(self.adversary_count.items(), key=lambda item: item[1], reverse=True)}
 
-        with open("output/city/category.json", "w") as f:
+        with open("output/idd/category.json", "w") as f:
             json.dump(self.categories_counter, f, ensure_ascii=False, indent=4)
 
-        with open("output/city/adversary.json", "w", encoding="utf8") as f:
+        with open("output/idd/adversary.json", "w", encoding="utf8") as f:
             json.dump(self.adversary_count, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':
-    # app = BDDSelector(root=r"D:\datasets\bdd100k")
-    app = IDDSelector(root=r"D:\datasets\cityscapes")
+    app = BDDSelector(root=r"D:\datasets\bdd100k")
+    # app = IDDSelector(root=r"D:\datasets\idd20kII")

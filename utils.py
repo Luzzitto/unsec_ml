@@ -87,3 +87,8 @@ class Counter:
 
     def get_count(self):
         return self.__count
+
+# Example usage
+# sbatch job.slurm datasets/clean/clean.yaml models/yolov8x-seg.pt 100 1280 1 ../trains clean "Baseline model for future references"
+# python bdd.py -m composite --host car terrain --target person --ratio 1.0 --project data/bdd/
+# sbatch job.slurm data/bdd/guard_rail-vegetation2terrain_r1.0/guard_rail-vegetation2terrain_r1.0.yaml yolov8x-seg.yaml 100 1280 1 trains/bdd/ guard_rail-vegetation2terrain_r1.0 "Adversary: composite, ratio: 1.0, dataset: bdd, host: road static, target: traffic light, notes: the highest of the 50th and 75th range is road-static."
